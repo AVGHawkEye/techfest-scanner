@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechFest 2026 Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body style="text-align:center;font-family:Arial;">
+
+  <h2>🎟 TechFest 2026 QR Scanner</h2>
+  <div id="reader" style="width:300px;margin:auto;"></div>
+  <h3 id="result"></h3>
+
+  <script>
+    function onScanSuccess(decodedText) {
+
+      document.getElementById("result").innerHTML = "Checking...";
+
+      fetch("https://script.google.com/macros/s/AKfycbzDLY0LANX6Zv84OeKZy1YaO0MYtDcmkTCed9BLEYDSForK4PSk8wCCfRikDgtOQkBz/exec", {
+        method: "POST",
+        body: decodedText
+      })
+      .then(res => res.text())
+      .then(data => {
+        document.getElementById("result").innerHTML = data;
+      })
+      .catch(err => {
+        document.getElementById("result").innerHTML = "Error connecting to server";
+      });
+    }
+
+    const scanner = new Html5QrcodeScanner("reader", {
+      fps: 10,
+      qrbox: 250
+    });
+
+    scanner.render(onScanSuccess);
+  </script>
+
+</body>
+</html>
