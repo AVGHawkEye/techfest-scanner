@@ -12,29 +12,81 @@
   <h3 id="result"></h3>
 
   <script>
-    function onScanSuccess(decodedText) {
+    let scanner;
 
-      document.getElementById("result").innerHTML = "Checking...";
+  // 🔊 Sound function
+  function playBeep(type) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-      fetch("https://script.google.com/macros/s/AKfycbzDLY0LANX6Zv84OeKZy1YaO0MYtDcmkTCed9BLEYDSForK4PSk8wCCfRikDgtOQkBz/exec", {
-        method: "POST",
-        body: decodedText
-      })
-      .then(res => res.text())
-      .then(data => {
-        document.getElementById("result").innerHTML = data;
-      })
-      .catch(err => {
-        document.getElementById("result").innerHTML = "Error connecting to server";
-      });
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === "valid") {
+      oscillator.frequency.value = 800; // High tone
+    } else if (type === "used") {
+      oscillator.frequency.value = 400; // Medium tone
+    } else {
+      oscillator.frequency.value = 200; // Low tone
     }
 
-    const scanner = new Html5QrcodeScanner("reader", {
-      fps: 10,
-      qrbox: 250
-    });
+    oscillator.type = "sine";
+    oscillator.start();
 
-    scanner.render(onScanSuccess);
+    gain.gain.exponentialRampToValueAtTime(
+      0.00001, ctx.currentTime + 0.5
+    );
+
+    setTimeout(() => {
+      oscillator.stop();
+      ctx.close();
+    }, 500);
+  }
+
+  function onScanSuccess(decodedText) {
+
+    scanner.clear(); // Stop scanner immediately
+    document.getElementById("result").innerHTML = "Checking...";
+
+    fetch("YOUR_EXEC_URL_HERE", {
+      method: "POST",
+      body: decodedText
+    })
+    .then(res => res.text())
+    .then(data => {
+
+      document.getElementById("result").innerHTML = data;
+
+      if (data.includes("ENTRY")) {
+        playBeep("valid");
+      } else if (data.includes("ALREADY")) {
+        playBeep("used");
+      } else {
+        playBeep("invalid");
+      }
+
+      setTimeout(() => {
+        scanner.render(onScanSuccess);
+      }, 3000);
+
+    })
+    .catch(() => {
+      document.getElementById("result").innerHTML = "Error connecting";
+      playBeep("invalid");
+
+      setTimeout(() => {
+        scanner.render(onScanSuccess);
+      }, 3000);
+    });
+  }
+
+  scanner = new Html5QrcodeScanner("reader", {
+    fps: 10,
+    qrbox: 250
+  });
+
+  scanner.render(onScanSuccess);
   </script>
 
 </body>
